@@ -1,57 +1,77 @@
-name: Build and deploy .NET application to container app greenbearcattimezoneconverterapi
+name: Build and deploy .NET Core application to Web App greenbearcattimezoneconverterapi with API Management Service greenbearcattimezoneconverterapiapi-greenbearcattimezoneconverterapi
 on:
   push:
     branches:
-    - main
+    - master
 env:
-  CONTAINER_APP_CONTAINER_NAME: greenbearcattimezoneconverterapi
-  CONTAINER_APP_NAME: greenbearcattimezoneconverterapi
-  CONTAINER_APP_RESOURCE_GROUP_NAME: Hack_Weekly
-  CONTAINER_REGISTRY_LOGIN_SERVER: greenbearcattimezoneconverterapi20230902133445.azurecr.io
-  DOTNET_CORE_VERSION: 7.0.x
-  PROJECT_NAME_FOR_DOCKER: green_bearcat_timezoneconverterapi
+  AZURE_WEBAPP_NAME: greenbearcattimezoneconverterapi
+  AZURE_WEBAPP_PACKAGE_PATH: .\publish
+  AZURE_APIM_RESOURCE_PATH: /
+  AZURE_APIM_RESOURCEGROUP: Hack_Weekly
+  AZURE_APIM_SERVICENAME: greenbearcattimezoneconverterapiapi
+  AZURE_APIM_API_ID: greenbearcattimezoneconverterapi
+  AZURE_APIM_APPSERVICEURL: https://greenbearcattimezoneconverterapi.azurewebsites.net
+  SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION: 5.6.3
+  SWASHBUCKLE_DOTNET_CORE_VERSION: 3.1.x
+  API_IMPORT_SPECIFICATION_PATH: .\publish\swagger.json
+  API_IMPORT_DLL: .\bin\Release\net8.0\green_bearcat_timezoneconverterapi.dll
+  API_IMPORT_VERSION: v1
+  CONFIGURATION: Release
+  DOTNET_CORE_VERSION: 8.0.x
+  WORKING_DIRECTORY: .
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
-    - name: Checkout to the branch
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v1.8.0
       with:
         include-prerelease: True
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
-    - name: Log in to container registry
-      uses: azure/docker-login@v1
+    - name: Setup SwashBuckle .NET Core
+      uses: actions/setup-dotnet@v3
       with:
-        login-server: ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}
-        username: ${{ secrets.greenbearcattimezoneconverterapi20230902133445_USERNAME_023D }}
-        password: ${{ secrets.greenbearcattimezoneconverterapi20230902133445_PASSWORD_023D }}
-    - name: Build and push container image to registry
-      run: dotnet publish -c Release -r linux-x64 -p:PublishProfile=DefaultContainer -p:ContainerImageTag=${{ github.sha }} --no-self-contained -p:ContainerRegistry=${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }} -bl
-    - name: Upload binlog for investigation
+        dotnet-version: ${{ env.SWASHBUCKLE_DOTNET_CORE_VERSION }}
+    - name: Restore
+      run: dotnet restore ${{ env.WORKING_DIRECTORY }}
+    - name: Build
+      run: dotnet build ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --no-restore
+    - name: Test
+      run: dotnet test ${{ env.WORKING_DIRECTORY }} --no-build
+    - name: Publish
+      run: dotnet publish ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Install Swashbuckle CLI .NET Global Tool
+      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION }}
+      working-directory: ${{ env.WORKING_DIRECTORY }}
+    - name: Generate Open API Specification Document
+      run: swagger tofile --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
+    - name: Publish Artifacts
       uses: actions/upload-artifact@v3
       with:
-        if-no-files-found: error
-        name: binlog
-        path: msbuild.binlog
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
     steps:
+    - name: Download artifact from build job
+      uses: actions/download-artifact@v3
+      with:
+        name: webapp
+        path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+    - name: Deploy to Azure WebApp
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        publish-profile: ${{ secrets.greenbearcattimezoneconverterapi_9E82 }}
     - name: Azure Login
       uses: azure/login@v1
       with:
-        creds: ${{ secrets.greenbearcattimezoneconverterapi_SPN }}
-    - name: Deploy to containerapp
-      uses: azure/CLI@v1
-      with:
-        inlineScript: >
-          az config set extension.use_dynamic_install=yes_without_prompt
-
-          az containerapp registry set --name ${{ env.CONTAINER_APP_NAME }} --resource-group ${{ env.CONTAINER_APP_RESOURCE_GROUP_NAME }} --server ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }} --username ${{ secrets.greenbearcattimezoneconverterapi20230902133445_USERNAME_023D }} --password ${{ secrets.greenbearcattimezoneconverterapi20230902133445_PASSWORD_023D }}
-
-          az containerapp update --name ${{ env.CONTAINER_APP_NAME }} --container-name ${{ env.CONTAINER_APP_CONTAINER_NAME }} --resource-group ${{ env.CONTAINER_APP_RESOURCE_GROUP_NAME }} --image ${{ env.CONTAINER_REGISTRY_LOGIN_SERVER }}/${{ env.PROJECT_NAME_FOR_DOCKER }}:${{ github.sha }}
+        creds: ${{ secrets.greenbearcattimezoneconverterapiapi_SPN }}
+    - name: Import API into Azure API Management
+      run: az apim api import --path "${{ env.AZURE_APIM_RESOURCE_PATH }}" --resource-group "${{ env.AZURE_APIM_RESOURCEGROUP }}" --service-name "${{ env.AZURE_APIM_SERVICENAME }}" --api-id "${{ env.AZURE_APIM_API_ID }}" --service-url "${{ env.AZURE_APIM_APPSERVICEURL }}" --specification-path "${{ env.API_IMPORT_SPECIFICATION_PATH }}" --specification-format OpenApi --subscription-required false
     - name: logout
       run: >
         az logout

@@ -13,6 +13,14 @@ var AllowAnyHost = "_AllowAnyHost";
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.ConfigureSwaggerGen(setup =>
+{
+    setup.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Timezone converter",
+        Version = "v1"
+    });
+});
 builder.Services.AddCors(options =>
 options.AddPolicy(name: AllowAnyHost, policy => policy.AllowAnyOrigin().AllowAnyHeader()));
 
