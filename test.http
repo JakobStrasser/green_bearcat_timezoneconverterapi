@@ -1,0 +1,5 @@
+# For more info on HTTP files go to https://aka.ms/vs/httpfile
+@hostname=localhost
+@port=7087
+GET https://{{hostname}}:{{port}}/timezones
+
