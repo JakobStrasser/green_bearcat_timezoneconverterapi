@@ -1,27 +1,27 @@
-name: Build and deploy .NET Core application to Web App greenbearcattimezoneconverterapi with API Management Service greenbearcattimezoneconverterapiapi-greenbearcattimezoneconverterapi
+name: Build and deploy .NET Core application to Web App greenbearcattimezoneconverterapi20230906215417 with API Management Service greenbearcattimezoneconverterapiapi-greenbearcattimezoneconverterapi
 on:
   push:
     branches:
     - master
 env:
-  AZURE_WEBAPP_NAME: greenbearcattimezoneconverterapi
-  AZURE_WEBAPP_PACKAGE_PATH: .\publish
+  AZURE_WEBAPP_NAME: greenbearcattimezoneconverterapi20230906215417
+  AZURE_WEBAPP_PACKAGE_PATH: ./publish
   AZURE_APIM_RESOURCE_PATH: /
   AZURE_APIM_RESOURCEGROUP: Hack_Weekly
   AZURE_APIM_SERVICENAME: greenbearcattimezoneconverterapiapi
   AZURE_APIM_API_ID: greenbearcattimezoneconverterapi
-  AZURE_APIM_APPSERVICEURL: https://greenbearcattimezoneconverterapi.azurewebsites.net
+  AZURE_APIM_APPSERVICEURL: https://greenbearcattimezoneconverterapi20230906215417.azurewebsites.net
   SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION: 5.6.3
   SWASHBUCKLE_DOTNET_CORE_VERSION: 3.1.x
-  API_IMPORT_SPECIFICATION_PATH: .\publish\swagger.json
-  API_IMPORT_DLL: .\bin\Release\net8.0\green_bearcat_timezoneconverterapi.dll
+  API_IMPORT_SPECIFICATION_PATH: ./publish/swagger.json
+  API_IMPORT_DLL: ./bin/Release/net8.0/green_bearcat_timezoneconverterapi.dll
   API_IMPORT_VERSION: v1
   CONFIGURATION: Release
   DOTNET_CORE_VERSION: 8.0.x
   WORKING_DIRECTORY: .
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET SDK
@@ -52,7 +52,7 @@ jobs:
         name: webapp
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
   deploy:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
     steps:
     - name: Download artifact from build job
@@ -65,7 +65,7 @@ jobs:
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-        publish-profile: ${{ secrets.greenbearcattimezoneconverterapi_9E82 }}
+        publish-profile: ${{ secrets.greenbearcattimezoneconverterapi20230906215417_C459 }}
     - name: Azure Login
       uses: azure/login@v1
       with:
