@@ -51,23 +51,21 @@ app.MapGet("/timezones", () =>
 .WithOpenApi();
 
 
-app.MapPost("/convert", [Consumes("application/x-www-form-urlencoded")] IResult ([FromForm] string sourcedatetime, [FromForm] string sourcetimezone, [FromForm] string targettimezone) =>
+
+app.MapPost("/convert", ([FromBody] ConverterRequestBody parameters) =>
 {
-    DateTime date;
-    if (!DateTime.TryParse(sourcedatetime, out date))
-    {
-        return Results.BadRequest($"Could not parse date parameter {sourcedatetime}");
-    }
-    if (System.String.IsNullOrEmpty(targettimezone))
+   
+
+    if (System.String.IsNullOrEmpty(parameters.Targettimezone))
     {
         return Results.BadRequest($"Missing target timezone!");
     }
-    if (System.String.IsNullOrEmpty(sourcetimezone))
+    if (System.String.IsNullOrEmpty(parameters.Sourcetimezone))
     {
         return Results.BadRequest($"Missing source timezone!");
     }
-    TimeZoneInfo targetZone = TimeZoneInfo.FindSystemTimeZoneById(targettimezone.Replace("_", " "));
-    TimeZoneInfo sourceZone = TimeZoneInfo.FindSystemTimeZoneById(sourcetimezone.Replace("_", " "));
+    TimeZoneInfo targetZone = TimeZoneInfo.FindSystemTimeZoneById(parameters.Targettimezone.Replace("_", " "));
+    TimeZoneInfo sourceZone = TimeZoneInfo.FindSystemTimeZoneById(parameters.Sourcetimezone.Replace("_", " "));
     DateTime targetDate;
     if (targetZone is null)
         return Results.BadRequest($"Could not parse target timezone");
@@ -76,15 +74,21 @@ app.MapPost("/convert", [Consumes("application/x-www-form-urlencoded")] IResult 
 
     if (targetZone is not null && sourceZone is not null)
     {
-        targetDate = TimeZoneInfo.ConvertTime(date, sourceZone, targetZone);
+        targetDate = TimeZoneInfo.ConvertTime(parameters.Sourcedatetime, sourceZone, targetZone);
         string html = $" <span id=\"targetdatetime\">{targetDate.ToString()}</span>";
         return Results.Ok(html);
 
     }
 
     return Results.Empty;
-}).WithName("Convert");
+}).WithName("convert");
 
 
 app.Run();
 
+public class ConverterRequestBody
+{
+    public required DateTime Sourcedatetime { get; set; }
+    public required string Sourcetimezone { get; set; }
+    public required string Targettimezone { get; set; }
+}

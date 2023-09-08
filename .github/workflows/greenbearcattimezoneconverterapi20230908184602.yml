@@ -1,33 +1,32 @@
-name: Build and deploy .NET Core application to Web App greenbearcattimezoneconverterapi20230906215417 with API Management Service greenbearcattimezoneconverterapiapi-greenbearcattimezoneconverterapi
+name: Build and deploy .NET Core application to Web App greenbearcattimezoneconverterapi20230908184602 with API Management Service greenbearcattimezoneconverterapiapi-greenbearcattimezoneconverterapi
 on:
   push:
     branches:
     - master
 env:
-  AZURE_WEBAPP_NAME: greenbearcattimezoneconverterapi20230906215417
-  AZURE_WEBAPP_PACKAGE_PATH: ./publish
+  AZURE_WEBAPP_NAME: greenbearcattimezoneconverterapi20230908184602
+  AZURE_WEBAPP_PACKAGE_PATH: .\publish
   AZURE_APIM_RESOURCE_PATH: /
   AZURE_APIM_RESOURCEGROUP: Hack_Weekly
   AZURE_APIM_SERVICENAME: greenbearcattimezoneconverterapiapi
   AZURE_APIM_API_ID: greenbearcattimezoneconverterapi
-  AZURE_APIM_APPSERVICEURL: https://greenbearcattimezoneconverterapi20230906215417.azurewebsites.net
+  AZURE_APIM_APPSERVICEURL: https://greenbearcattimezoneconverterapi20230908184602.azurewebsites.net
   SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION: 5.6.3
   SWASHBUCKLE_DOTNET_CORE_VERSION: 3.1.x
-  API_IMPORT_SPECIFICATION_PATH: ./publish/swagger.json
-  API_IMPORT_DLL: ./bin/Release/net8.0/green_bearcat_timezoneconverterapi.dll
+  API_IMPORT_SPECIFICATION_PATH: .\publish\swagger.json
+  API_IMPORT_DLL: .\bin\Release\net7.0\green_bearcat_timezoneconverterapi.dll
   API_IMPORT_VERSION: v1
   CONFIGURATION: Release
-  DOTNET_CORE_VERSION: 8.0.x
+  DOTNET_CORE_VERSION: 7.0.x
   WORKING_DIRECTORY: .
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET SDK
       uses: actions/setup-dotnet@v3
       with:
-        include-prerelease: True
         dotnet-version: ${{ env.DOTNET_CORE_VERSION }}
     - name: Setup SwashBuckle .NET Core
       uses: actions/setup-dotnet@v3
@@ -41,18 +40,18 @@ jobs:
       run: dotnet test ${{ env.WORKING_DIRECTORY }} --no-build
     - name: Publish
       run: dotnet publish ${{ env.WORKING_DIRECTORY }} --configuration ${{ env.CONFIGURATION }} --no-build --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-    # - name: Install Swashbuckle CLI .NET Global Tool
-    #   run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION }}
-    #   working-directory: ${{ env.WORKING_DIRECTORY }}
-    # - name: Generate Open API Specification Document
-    #   run: swagger tofile --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
+    - name: Install Swashbuckle CLI .NET Global Tool
+      run: dotnet tool install --global Swashbuckle.AspNetCore.Cli --version ${{ env.SWASHBUCLE_ASPNET_CORE_CLI_PACKAGE_VERSION }}
+      working-directory: ${{ env.WORKING_DIRECTORY }}
+    - name: Generate Open API Specification Document
+      run: swagger tofile --output "${{ env.API_IMPORT_SPECIFICATION_PATH }}" "${{ env.API_IMPORT_DLL }}" "${{ env.API_IMPORT_VERSION }}"
     - name: Publish Artifacts
       uses: actions/upload-artifact@v3
       with:
         name: webapp
         path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     needs: build
     steps:
     - name: Download artifact from build job
@@ -65,7 +64,7 @@ jobs:
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
         package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-        publish-profile: ${{ secrets.greenbearcattimezoneconverterapi20230906215417_C459 }}
+        publish-profile: ${{ secrets.greenbearcattimezoneconverterapi20230908184602_34DC }}
     - name: Azure Login
       uses: azure/login@v1
       with:
